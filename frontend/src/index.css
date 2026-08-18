@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-paper text-ink font-body;
+}
+
+h1, h2, h3, .font-display {
+  font-family: 'Fraunces', Georgia, serif;
+}
+
+.card-stamp {
+  @apply inline-block px-2 py-0.5 text-[11px] tracking-widest uppercase rounded-sm border;
+}
