@@ -4,12 +4,13 @@ export default {
   theme: {
     extend: {
       colors: {
-        ink: "#1B2430",
+        ink: "#12233D",
         paper: "#FAF6EE",
-        brass: "#B8863B",
-        burgundy: "#6B2737",
-        forest: "#2F5233",
-        parchment: "#F0E7D3",
+        parchment: "#F1E9D8",
+        accent: "#E2892D",
+        brass: "#E2892D",
+        burgundy: "#E2892D",
+        forest: "#E2892D",
       },
       fontFamily: {
         display: ["'Fraunces'", "Georgia", "serif"],

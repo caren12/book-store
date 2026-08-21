@@ -11,5 +11,5 @@ h1, h2, h3, .font-display {
 }
 
 .card-stamp {
-  @apply inline-block px-2 py-0.5 text-[11px] tracking-widest uppercase rounded-sm border;
+  @apply inline-flex items-center justify-center min-w-[72px] px-2 py-1 text-[11px] tracking-widest uppercase rounded-sm border text-center whitespace-nowrap overflow-hidden text-ellipsis;
 }
