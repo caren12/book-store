@@ -17,11 +17,11 @@ export default function BookCard({ book }) {
       <p className="text-sm text-ink/60 mb-2">{book.author}</p>
       <div className="flex items-center justify-between text-xs">
         <span className="card-stamp border-brass text-brass">{book.genre}</span>
-        {book.is_in_store && <span className="font-semibold text-ink">${book.price.toFixed(2)}</span>}
+        {book.is_in_store && <span className="font-semibold text-blue-900">${book.price.toFixed(2)}</span>}
       </div>
       <div className="mt-2 flex gap-1 flex-wrap">
         {book.is_in_store && (
-          <span className="card-stamp border-burgundy text-burgundy">Shop</span>
+          <span className="card-stamp bg-ink text-paper border-ink">Shop</span>
         )}
         {book.is_in_library && (
           <span className="card-stamp border-forest text-forest">

@@ -1,3 +1,4 @@
+import GoogleBooksSearch from "./pages/GoogleBooksSearch";
 import { Routes, Route } from "react-router-dom";
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -39,6 +40,7 @@ export default function App() {
           <Route path="/admin/books" element={<AdminRoute><AdminBooks /></AdminRoute>} />
           <Route path="/admin/orders" element={<AdminRoute><AdminOrders /></AdminRoute>} />
           <Route path="/admin/lending" element={<AdminRoute><AdminLending /></AdminRoute>} />
+          <Route path="/search-google-books" element={<GoogleBooksSearch />} />
         </Routes>
       </main>
       <footer className="border-t border-ink/10 py-6 text-center text-xs text-ink/40">
