@@ -1,7 +1,15 @@
-// ======================================================================
-// Assigned to: Alvin
-// File: frontend/src/components/ProtectedRoute.jsx
-// Purpose: Route guards: ProtectedRoute (logged-in) and AdminRoute (admin-only).
-// ======================================================================
+import { Navigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 
-// TODO(Alvin): implement this file.
+export function ProtectedRoute({ children }) {
+  const { token } = useSelector((state) => state.auth);
+  if (!token) return <Navigate to="/login" replace />;
+  return children;
+}
+
+export function AdminRoute({ children }) {
+  const { token, user } = useSelector((state) => state.auth);
+  if (!token) return <Navigate to="/login" replace />;
+  if (user && user.role !== "admin") return <Navigate to="/" replace />;
+  return children;
+}
