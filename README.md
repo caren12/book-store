@@ -1,24 +1,82 @@
-# Booked
+# Booked — Frontend
 
-Recreating the original Amazon bookstore concept: a shop **and** a lending library in one app.
+React frontend for Booked, an online bookstore and lending library. Fetches live book data from the Google Books API and renders it as store and library listings.
+
+## Tech Stack
+
+- React
+- Redux Toolkit
+- React Router
+- Tailwind CSS
+- Vite
+
+## Getting Started
+
+### Install dependencies
+
+```bash
+npm install
+```
+
+### Environment variables
+
+Create a `.env` file in this directory:
 
 ```
-booked/
-  backend/     Flask REST API + PostgreSQL (see backend/README.md)
-  frontend/    React + Redux Toolkit client (see frontend/README.md)
+VITE_GOOGLE_BOOKS_API_KEY=your_google_books_api_key_here
 ```
 
-## Quick start
+Get a key from the [Google Cloud Console](https://console.cloud.google.com/):
 
-1. **Backend** — `cd backend`, follow `backend/README.md` (creates the Postgres DB, runs migrations, seeds demo data, starts on port 5000).
-2. **Frontend** — `cd frontend`, `npm install && npm run dev` (starts on port 5173, proxies `/api` to the backend).
-3. Log in with the seeded admin (`admin@booked.com` / `admin123`) to reach `/admin`, or the demo user (`reader@booked.com` / `reader123`) for the shopper experience.
+1. Enable the **Books API** for your project
+2. Create an API key under **Credentials**
+3. Restrict it under **API restrictions** to **Books API** only
+4. Paste it into `.env` as shown above
 
-## Roles
+`.env` is already listed in `.gitignore` — never commit it, and never hardcode the key directly in source files.
 
-- **Admin** — auth, add/update/delete books, approve/reject purchase orders, approve/reject lending requests, confirm returns, view everything.
-- **User** — auth, browse shop/library, search & filter, separate purchase/lending carts, checkout, pay once approved, initiate returns, view order/lending history.
+### Run the dev server
 
-## Roadmap note
+```bash
+npm run dev
+```
 
-This Phase-1-complete build already includes its own Flask + PostgreSQL backend rather than a public API, since "Booked" is the full capstone concept. If you're also working through the separate 3-phase capstone rubric (Phase 1: public-API React app → Phase 2: add Flask+Postgres → Phase 3: add auth), treat this repo as a reference for what a completed Phase 3 looks like, and we'll walk through scoping your own phased build next.
+Vite only reads `.env` at server start, so restart the dev server after adding or changing `.env` values.
+
+### Build for production
+
+```bash
+npm run build
+```
+
+## Project Structure
+
+```
+frontend/
+├── src/
+│   ├── components/
+│   │   └── BookCard.jsx
+│   ├── pages/
+│   │   └── Home.jsx
+│   ├── features/
+│   │   └── books/
+│   │       └── booksSlice.js
+│   ├── index.css
+│   ├── main.jsx
+│   └── App.jsx
+├── .env
+└── package.json
+```
+
+## Key Files
+
+| File | Purpose |
+|---|---|
+| `features/books/booksSlice.js` | Redux slice — fetches and transforms book data from the Google Books API |
+| `components/BookCard.jsx` | Renders a single book preview card (cover, title, author, genre, price) |
+| `index.css` | Tailwind config and shared component classes (e.g. `.card-stamp` badges) |
+
+## Notes
+
+- Book data (price, library availability, copy counts) is partially simulated client-side since the Google Books API doesn't provide store/library metadata — see `hashToUnit` and `mapVolumeToBook` in `booksSlice.js`.
+- Genre badges use `.card-stamp` in `index.css`; long genre names are shortened at the data layer and truncated with an ellipsis if still too long.
