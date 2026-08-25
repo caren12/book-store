@@ -27,4 +27,16 @@ def create_app(config_class=Config):
     app.register_blueprint(lending_bp, url_prefix="/api/lending")
     app.register_blueprint(admin_bp, url_prefix="/api/admin")
 
-    
+    @app.get("/api/health")
+    def health():
+        return {"status": "ok"}
+
+    @app.errorhandler(404)
+    def not_found(e):
+        return {"error": "Resource not found"}, 404
+
+    @app.errorhandler(500)
+    def server_error(e):
+        return {"error": "Internal server error"}, 500
+
+    return app
