@@ -1,7 +1,15 @@
-# ======================================================================
-# Assigned to: Edwin
-# File: backend/app/utils.py
-# Purpose: Shared helpers, e.g. the admin_required route decorator.
-# ======================================================================
+from functools import wraps
+from flask import jsonify
+from flask_jwt_extended import verify_jwt_in_request, get_jwt
 
-# TODO(Edwin): implement this file.
+
+def admin_required(fn):
+    """Route decorator: allows access only to authenticated admins."""
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        verify_jwt_in_request()
+        claims = get_jwt()
+        if claims.get("role") != "admin":
+            return jsonify({"error": "Admin access required"}), 403
+        return fn(*args, **kwargs)
+    return wrapper
