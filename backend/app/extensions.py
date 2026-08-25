@@ -1,7 +1,11 @@
-# ======================================================================
-# Assigned to: Enock
-# File: backend/app/extensions.py
-# Purpose: Shared extension instances: db, migrate, jwt, bcrypt, cors.
-# ======================================================================
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+from flask_jwt_extended import JWTManager
+from flask_bcrypt import Bcrypt
+from flask_cors import CORS
 
-# TODO(Enock): implement this file.
+db = SQLAlchemy()
+migrate = Migrate()
+jwt = JWTManager()
+bcrypt = Bcrypt()
+cors = CORS()
