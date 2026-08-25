@@ -33,3 +33,28 @@ def checkout():
     db.session.commit()
     return jsonify({"order": order.to_dict()}), 201
 
+
+@orders_bp.get("")
+@jwt_required()
+def list_my_orders():
+    user_id = get_jwt_identity()
+    orders = PurchaseOrder.query.filter_by(user_id=user_id).order_by(PurchaseOrder.created_at.desc()).all()
+    return jsonify({"orders": [o.to_dict() for o in orders]}), 200
+
+
+@orders_bp.post("/<int:order_id>/pay")
+@jwt_required()
+def pay_order(order_id):
+    """Simulated payment: only allowed once admin has approved the order."""
+    user_id = get_jwt_identity()
+    order = PurchaseOrder.query.filter_by(id=order_id, user_id=user_id).first()
+    if not order:
+        return jsonify({"error": "Order not found"}), 404
+    if order.status != "approved":
+        return jsonify({"error": "Order must be approved before payment"}), 400
+    if order.payment_status == "paid":
+        return jsonify({"error": "Order already paid"}), 400
+
+    order.payment_status = "paid"
+    db.session.commit()
+    return jsonify({"order": order.to_dict()}), 200
