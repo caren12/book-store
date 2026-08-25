@@ -1,7 +1,7 @@
-# ======================================================================
-# Assigned to: Alvin
-# File: backend/app/seed.py
-# Purpose: Seed script: demo admin/user + sample books.
-# ======================================================================
+"""Seed the database with a demo admin, a demo user, and sample books.
+Run with:  python -m app.seed
+"""
+from app import create_app
+from app.extensions import db
+from app.models import User, Book
 
-# TODO(Alvin): implement this file.
