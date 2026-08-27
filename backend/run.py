@@ -1,7 +1,6 @@
-# ======================================================================
-# Assigned to: Edwin
-# File: backend/run.py
-# Purpose: Entry point that runs the Flask dev server.
-# ======================================================================
+from app import create_app
 
-# TODO(Edwin): implement this file.
+app = create_app()
+
+if __name__ == "__main__":
+    app.run(debug=True, port=5000)
