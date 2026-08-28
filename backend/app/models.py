@@ -33,9 +33,14 @@ class User(db.Model):
 
 
 class Book(db.Model):
+    """Book records are keyed by Google Books volume ID (a string,
+    e.g. "d_wvEQAAQBAJ") rather than an auto-incrementing integer,
+    since all book data originates from the Google Books API. A row
+    is created here the first time a given Google Books volume is
+    added to a cart (see services/google_books.py)."""
     __tablename__ = "books"
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.String(64), primary_key=True)  # Google Books volume ID
     title = db.Column(db.String(255), nullable=False, index=True)
     author = db.Column(db.String(255), nullable=False)
     genre = db.Column(db.String(100), nullable=False, index=True)
@@ -72,7 +77,7 @@ class CartItem(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    book_id = db.Column(db.Integer, db.ForeignKey("books.id"), nullable=False)
+    book_id = db.Column(db.String(64), db.ForeignKey("books.id"), nullable=False)
     cart_type = db.Column(db.String(20), nullable=False)  # "purchase" | "lending"
     quantity = db.Column(db.Integer, default=1)
     added_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -116,7 +121,7 @@ class OrderItem(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     order_id = db.Column(db.Integer, db.ForeignKey("purchase_orders.id"), nullable=False)
-    book_id = db.Column(db.Integer, db.ForeignKey("books.id"), nullable=False)
+    book_id = db.Column(db.String(64), db.ForeignKey("books.id"), nullable=False)
     quantity = db.Column(db.Integer, default=1)
     unit_price = db.Column(db.Numeric(10, 2), default=0)
 
@@ -136,7 +141,7 @@ class LendingRequest(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    book_id = db.Column(db.Integer, db.ForeignKey("books.id"), nullable=False)
+    book_id = db.Column(db.String(64), db.ForeignKey("books.id"), nullable=False)
     status = db.Column(db.String(20), default="pending")  # pending, approved, rejected, returned, return_requested
     requested_at = db.Column(db.DateTime, default=datetime.utcnow)
     approved_at = db.Column(db.DateTime, nullable=True)
