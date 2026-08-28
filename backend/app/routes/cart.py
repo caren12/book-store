@@ -1,7 +1,8 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.extensions import db
-from app.models import CartItem, Book
+from app.models import CartItem
+from app.services.google_books import get_or_import_book
 
 cart_bp = Blueprint("cart", __name__)
 
@@ -27,22 +28,30 @@ def add_to_cart():
     cart_type = data.get("cart_type")  # "purchase" | "lending"
     quantity = data.get("quantity", 1)
 
+    if not book_id:
+        return jsonify({"error": "book_id is required"}), 400
+
     if cart_type not in ("purchase", "lending"):
         return jsonify({"error": "cart_type must be 'purchase' or 'lending'"}), 400
 
-    book = Book.query.get(book_id)
+    # book_id is a Google Books volume ID (string). If we don't have
+    # this book locally yet, fetch it from Google Books and create a
+    # row for it now, since cart/order/lending records need a real
+    # local Book to reference.
+    book = get_or_import_book(book_id)
     if not book:
         return jsonify({"error": "Book not found"}), 404
+
     if cart_type == "purchase" and not book.is_in_store:
         return jsonify({"error": "This book is not available for purchase"}), 400
     if cart_type == "lending" and not book.is_in_library:
         return jsonify({"error": "This book is not available in the library"}), 400
 
-    existing = CartItem.query.filter_by(user_id=user_id, book_id=book_id, cart_type=cart_type).first()
+    existing = CartItem.query.filter_by(user_id=user_id, book_id=book.id, cart_type=cart_type).first()
     if existing:
         existing.quantity += quantity
     else:
-        existing = CartItem(user_id=user_id, book_id=book_id, cart_type=cart_type, quantity=quantity)
+        existing = CartItem(user_id=user_id, book_id=book.id, cart_type=cart_type, quantity=quantity)
         db.session.add(existing)
 
     db.session.commit()
