@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk, createSelector } from "@reduxjs/toolkit";
 import api from "../../services/api";
 
 export const checkoutPurchase = createAsyncThunk(
@@ -37,9 +37,14 @@ export const fetchMyLending = createAsyncThunk("orders/fetchMyLending", async ()
 
 export const payOrder = createAsyncThunk(
   "orders/payOrder",
-  async (orderId, { rejectWithValue }) => {
+  async ({ orderId, cardNumber, expiry, cvv }, { rejectWithValue }) => {
     try {
-      const res = await api.post(`/orders/${orderId}/pay`);
+      // Uses the mock payment endpoint — no real payment gateway involved.
+      const res = await api.post(`/orders/${orderId}/pay/mock`, {
+        card_number: cardNumber,
+        expiry,
+        cvv,
+      });
       return res.data.order;
     } catch (err) {
       return rejectWithValue(err.response?.data?.error || "Payment failed");
@@ -101,4 +106,23 @@ const ordersSlice = createSlice({
 });
 
 export const { clearOrdersError } = ordersSlice.actions;
+
+// Memoized: only recomputes when purchaseOrders actually changes, avoiding
+// the "selector returned a different result" warning from returning a new
+// Set/array on every call.
+export const selectOwnedBookIds = createSelector(
+  (state) => state.orders.purchaseOrders,
+  (purchaseOrders) => {
+    const ids = new Set();
+    purchaseOrders.forEach((order) => {
+      if (order.payment_status === "paid") {
+        order.items.forEach((item) => {
+          if (item.book?.id) ids.add(item.book.id);
+        });
+      }
+    });
+    return ids;
+  }
+);
+
 export default ordersSlice.reducer;

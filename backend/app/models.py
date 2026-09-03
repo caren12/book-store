@@ -99,9 +99,23 @@ class PurchaseOrder(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     status = db.Column(db.String(20), default="pending")  # pending, approved, rejected
-    payment_status = db.Column(db.String(20), default="unpaid")  # unpaid, paid
+    payment_status = db.Column(db.String(20), default="unpaid")  # unpaid, pending, paid, failed
     total_amount = db.Column(db.Numeric(10, 2), default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # --- M-Pesa / BUNI STK Push tracking ---
+    mpesa_phone_number = db.Column(db.String(15), nullable=True)
+    mpesa_merchant_request_id = db.Column(db.String(100), nullable=True)
+    mpesa_checkout_request_id = db.Column(db.String(100), nullable=True, index=True)
+    mpesa_receipt_number = db.Column(db.String(50), nullable=True)
+    mpesa_result_desc = db.Column(db.String(255), nullable=True)
+
+    # --- Flutterwave card payment tracking ---
+    flw_customer_id = db.Column(db.String(100), nullable=True)
+    flw_charge_id = db.Column(db.String(100), nullable=True, index=True)
+    flw_reference = db.Column(db.String(100), nullable=True)
+    flw_redirect_url = db.Column(db.String(500), nullable=True)
+    flw_status_detail = db.Column(db.String(255), nullable=True)
 
     items = db.relationship("OrderItem", backref="order", cascade="all, delete-orphan")
 
@@ -113,6 +127,14 @@ class PurchaseOrder(db.Model):
             "total_amount": float(self.total_amount) if self.total_amount is not None else 0,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "items": [i.to_dict() for i in self.items],
+            "mpesa_phone_number": self.mpesa_phone_number,
+            "mpesa_checkout_request_id": self.mpesa_checkout_request_id,
+            "mpesa_receipt_number": self.mpesa_receipt_number,
+            "mpesa_result_desc": self.mpesa_result_desc,
+            "flw_charge_id": self.flw_charge_id,
+            "flw_reference": self.flw_reference,
+            "flw_redirect_url": self.flw_redirect_url,
+            "flw_status_detail": self.flw_status_detail,
         }
 
 

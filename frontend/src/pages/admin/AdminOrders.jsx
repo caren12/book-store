@@ -42,9 +42,10 @@ export default function AdminOrders() {
 
   return (
     <div className="max-w-5xl mx-auto p-6">
-      <h1 className="font-display text-2xl text-ink mb-1">Manage Orders</h1>
+      <h1 className="font-display text-2xl text-ink mb-1">Orders</h1>
       <p className="text-sm text-ink/50 mb-6">
-        {orders.length} order{orders.length !== 1 ? "s" : ""} placed.
+        {orders.length} order{orders.length !== 1 ? "s" : ""} placed. Purchases are processed automatically once paid —
+        no admin approval needed.
       </p>
 
       <div className="overflow-x-auto border border-ink/20 rounded-sm">
