@@ -8,6 +8,42 @@ auth_bp = Blueprint("auth", __name__)
 
 @auth_bp.post("/register")
 def register():
+    """Register a new user
+    ---
+    tags:
+      - Auth
+    parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          required:
+            - name
+            - email
+            - password
+          properties:
+            name:
+              type: string
+            email:
+              type: string
+            password:
+              type: string
+    responses:
+      201:
+        description: User created, returns user object and JWT access token
+        schema:
+          type: object
+          properties:
+            user:
+              type: object
+            access_token:
+              type: string
+      400:
+        description: Missing required fields
+      409:
+        description: An account with this email already exists
+    """
     data = request.get_json() or {}
     name = data.get("name", "").strip()
     email = data.get("email", "").strip().lower()
@@ -30,6 +66,37 @@ def register():
 
 @auth_bp.post("/login")
 def login():
+    """Log in a user
+    ---
+    tags:
+      - Auth
+    parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          required:
+            - email
+            - password
+          properties:
+            email:
+              type: string
+            password:
+              type: string
+    responses:
+      200:
+        description: Login successful, returns user object and JWT access token
+        schema:
+          type: object
+          properties:
+            user:
+              type: object
+            access_token:
+              type: string
+      401:
+        description: Invalid email or password
+    """
     data = request.get_json() or {}
     email = data.get("email", "").strip().lower()
     password = data.get("password", "")
@@ -45,6 +112,23 @@ def login():
 @auth_bp.get("/me")
 @jwt_required()
 def me():
+    """Get the currently authenticated user
+    ---
+    tags:
+      - Auth
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: The authenticated user's profile
+        schema:
+          type: object
+          properties:
+            user:
+              type: object
+      404:
+        description: User not found
+    """
     user = User.query.get(get_jwt_identity())
     if not user:
         return jsonify({"error": "User not found"}), 404

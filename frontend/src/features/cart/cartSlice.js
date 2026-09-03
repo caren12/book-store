@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk, createSelector } from "@reduxjs/toolkit";
 import api from "../../services/api";
 
 export const fetchCart = createAsyncThunk("cart/fetchCart", async () => {
@@ -57,7 +57,17 @@ const cartSlice = createSlice({
 
 export const { clearCartError } = cartSlice.actions;
 
-export const selectPurchaseCart = (state) => state.cart.items.filter((i) => i.cart_type === "purchase");
-export const selectLendingCart = (state) => state.cart.items.filter((i) => i.cart_type === "lending");
+// Memoized with createSelector — returning `state.cart.items.filter(...)`
+// directly creates a brand-new array on every call, which is what was
+// triggering the "selector returned a different result" warnings.
+export const selectPurchaseCart = createSelector(
+  (state) => state.cart.items,
+  (items) => items.filter((i) => i.cart_type === "purchase")
+);
+
+export const selectLendingCart = createSelector(
+  (state) => state.cart.items,
+  (items) => items.filter((i) => i.cart_type === "lending")
+);
 
 export default cartSlice.reducer;

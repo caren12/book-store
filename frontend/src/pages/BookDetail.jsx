@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchBookDetail } from "../features/books/booksSlice";
 import { addToCart } from "../features/cart/cartSlice";
+import { fetchMyOrders, selectOwnedBookIds } from "../features/orders/ordersSlice";
 
 export default function BookDetail() {
   const { id } = useParams();
@@ -10,11 +11,19 @@ export default function BookDetail() {
   const navigate = useNavigate();
   const { selectedBook: book } = useSelector((state) => state.books);
   const { token } = useSelector((state) => state.auth);
+  const ownedBookIds = useSelector(selectOwnedBookIds);
   const [message, setMessage] = useState("");
 
   useEffect(() => {
     dispatch(fetchBookDetail(id));
   }, [dispatch, id]);
+
+  useEffect(() => {
+    // Need the user's orders loaded to know whether they already own this book.
+    if (token) {
+      dispatch(fetchMyOrders());
+    }
+  }, [dispatch, token]);
 
   const handleAdd = async (cartType) => {
     if (!token) {
@@ -31,6 +40,8 @@ export default function BookDetail() {
 
   if (!book) return <div className="max-w-4xl mx-auto px-4 py-10 text-ink/50">Loading…</div>;
 
+  const isOwned = ownedBookIds.has(book.id);
+
   return (
     <div>
       <div className="bg-ink text-paper">
@@ -40,7 +51,6 @@ export default function BookDetail() {
           <p className="text-paper/60 mt-1">by {book.author}</p>
         </div>
       </div>
-
       <div className="max-w-4xl mx-auto px-4 py-10 grid md:grid-cols-2 gap-10">
         <div className="aspect-[3/4] bg-parchment rounded-sm flex items-center justify-center -mt-16 shadow-lg">
           {book.cover_url ? (
@@ -49,32 +59,38 @@ export default function BookDetail() {
             <span className="font-display text-6xl text-ink/20">{book.title.charAt(0)}</span>
           )}
         </div>
-
         <div>
           <p className="text-ink/80 leading-relaxed mb-6">{book.description || "No description available yet."}</p>
-
           {message && <p className="text-sm text-forest mb-4">{message}</p>}
 
           <div className="flex flex-col gap-3 max-w-xs">
-            {book.is_in_store && (
-              <button
-                onClick={() => handleAdd("purchase")}
-                className="bg-brass text-ink py-2.5 rounded-sm font-semibold hover:opacity-90 transition"
-              >
-                Buy for ${book.price.toFixed(2)}
-              </button>
-            )}
-            {book.is_in_library && (
-              <button
-                onClick={() => handleAdd("lending")}
-                disabled={book.available_copies < 1}
-                className="border-2 border-forest text-forest py-2.5 rounded-sm font-medium hover:bg-forest hover:text-paper transition disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-forest"
-              >
-                {book.available_copies > 0 ? "Borrow from library" : "No copies available"}
-              </button>
-            )}
-            {!book.is_in_store && !book.is_in_library && (
-              <p className="text-sm text-ink/50 italic">This title is currently unavailable.</p>
+            {isOwned ? (
+              <span className="card-stamp border-forest text-forest self-start px-4 py-2 text-sm font-medium">
+                ✓ Owned
+              </span>
+            ) : (
+              <>
+                {book.is_in_store && (
+                  <button
+                    onClick={() => handleAdd("purchase")}
+                    className="bg-brass text-ink py-2.5 rounded-sm font-semibold hover:opacity-90 transition"
+                  >
+                    Buy for ${book.price.toFixed(2)}
+                  </button>
+                )}
+                {book.is_in_library && (
+                  <button
+                    onClick={() => handleAdd("lending")}
+                    disabled={book.available_copies < 1}
+                    className="border-2 border-forest text-forest py-2.5 rounded-sm font-medium hover:bg-forest hover:text-paper transition disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-forest"
+                  >
+                    {book.available_copies > 0 ? "Borrow from library" : "No copies available"}
+                  </button>
+                )}
+                {!book.is_in_store && !book.is_in_library && (
+                  <p className="text-sm text-ink/50 italic">This title is currently unavailable.</p>
+                )}
+              </>
             )}
           </div>
         </div>
