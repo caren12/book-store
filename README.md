@@ -1,141 +1,151 @@
 # Booked — Backend
 
-Flask API for Booked, an online bookstore and lending library. Handles auth, cart, checkout, lending, and admin management. Book data is sourced from the Google Books API and imported into the local database on first use.
+The Flask + PostgreSQL API powering **Booked**, a bookstore and lending library where users can buy books or borrow them like a physical library, with admin oversight for lending.
+
+Live API: `https://book-store-29gn.onrender.com`
+Interactive API docs (Swagger UI): `https://book-store-29gn.onrender.com/apidocs/`
+
+> Note: the live backend runs on Render's free tier, which spins down after inactivity. The first request after idle time can take 30–60 seconds to respond while the instance wakes up.
+
+---
 
 ## Tech Stack
 
-- Flask
-- PostgreSQL
-- SQLAlchemy + Flask-Migrate (Alembic)
-- Flask-JWT-Extended (authentication)
-- Flask-CORS
-- Bcrypt (password hashing)
+- **Flask** (app factory pattern) with six blueprints: `auth`, `books`, `cart`, `orders`, `lending`, `admin`
+- **PostgreSQL** via SQLAlchemy + Flask-Migrate (Alembic)
+- **JWT authentication** via Flask-JWT-Extended, with role-based access control (`user` / `admin`)
+- **Flasgger** for auto-generated Swagger/OpenAPI documentation
+- **Google Books API** integration — books are imported on first cart interaction, keyed by their Google Books volume ID rather than an internal integer ID
+- **Gunicorn** as the production WSGI server (Render deployment)
 
-## Getting Started
-
-### Prerequisites
-
-- Python 3.10+
-- PostgreSQL installed and running
-
-### 1. Set up the virtual environment
-
-```bash
-cd backend
-python -m venv venv
-source venv/bin/activate   # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-```
-
-### 2. Create the database and user
-
-```bash
-sudo -u postgres psql -c "CREATE USER booked_user WITH PASSWORD 'booked_pass';"
-sudo -u postgres psql -c "CREATE DATABASE booked_db OWNER booked_user;"
-```
-
-### 3. Configure environment variables
-
-Copy the example file and fill in real values:
-
-```bash
-cp .env.example .env
-```
-
-`.env` should contain:
-
-```
-DATABASE_URL=postgresql://booked_user:booked_pass@localhost:5432/booked_db
-JWT_SECRET_KEY=your_jwt_secret_here
-SECRET_KEY=your_secret_key_here
-FLASK_ENV=development
-FRONTEND_ORIGIN=http://localhost:5173
-GOOGLE_BOOKS_API_KEY=your_google_books_api_key_here
-```
-
-Get a Google Books API key from the [Google Cloud Console](https://console.cloud.google.com/) — enable the **Books API**, then create and restrict an API key to that API only. `.env` is git-ignored; never commit it.
-
-### 4. Run migrations
-
-```bash
-flask db upgrade
-```
-
-If `migrations/` doesn't exist yet in your clone for some reason:
-
-```bash
-flask db init
-flask db migrate -m "initial migration"
-flask db upgrade
-```
-
-### 5. Start the server
-
-```bash
-flask run
-```
-
-Runs on `http://localhost:5000` by default. The frontend's Vite dev server proxies `/api` requests here.
+---
 
 ## Project Structure
 
 ```
 backend/
 ├── app/
-│   ├── models.py              # SQLAlchemy models (User, Book, CartItem, PurchaseOrder, OrderItem, LendingRequest)
+│   ├── __init__.py        # App factory: extensions, blueprints, error handlers
+│   ├── extensions.py       # db, migrate, jwt, bcrypt, cors, swagger instances
+│   ├── models.py            # User, Book, CartItem, PurchaseOrder, OrderItem, LendingRequest
+│   ├── utils.py              # admin_required decorator, etc.
 │   ├── routes/
-│   │   ├── auth.py            # register, login, me
-│   │   ├── books.py           # book listing/search
-│   │   ├── cart.py            # cart add/remove/list
-│   │   ├── orders.py          # checkout, order history
-│   │   ├── lending.py         # lending requests
-│   │   └── admin.py           # admin book/order/lending/user management
-│   ├── services/
-│   │   └── google_books.py    # fetches + imports books from the Google Books API
-│   └── extensions.py          # db, bcrypt, jwt, etc.
-├── migrations/                 # Alembic migration history
-├── tests/
-├── config.py
-├── run.py
-├── requirements.txt
-└── .env.example
+│   │   ├── auth.py            # register, login, /me
+│   │   ├── books.py            # list/search/CRUD books
+│   │   ├── cart.py              # purchase & lending carts
+│   │   ├── orders.py             # checkout, mock card payment, order history
+│   │   ├── lending.py             # borrow checkout, return requests
+│   │   └── admin.py                # dashboard summary, lending approval, book/user management
+│   └── services/
+│       └── google_books.py         # get_or_import_book() — fetches & caches Google Books volumes
+├── migrations/                       # Alembic migration history
+├── tests/                             # pytest suite
+├── config.py                           # env-driven configuration
+├── run.py                               # entrypoint: app = create_app()
+└── requirements.txt
 ```
 
-## How Book Data Works
+---
 
-Books are **not** manually seeded. `Book.id` is a Google Books volume ID (string, e.g. `"d_wvEQAAQBAJ"`), not an auto-incrementing integer. The frontend fetches book search results live from the Google Books API. The first time a user adds a given book to their cart (or otherwise interacts with it in a way that needs a local record), the backend fetches that volume from Google Books and creates a matching row in the `books` table — see `get_or_import_book()` in `app/services/google_books.py`. Store price, library availability, and copy counts are derived deterministically from the book's ID (Google's API doesn't provide this data), so the same book always gets the same simulated price/availability.
+## Local Setup
 
-## Auth
+```bash
+# 1. Clone and enter the backend folder
+git clone <repo-url>
+cd book-store/backend
 
-JWT-based. `POST /api/auth/register` and `POST /api/auth/login` return a `user` object and `access_token`. The frontend stores the token in `localStorage` and sends it as a `Bearer` token on subsequent requests. `GET /api/auth/me` returns the current user based on the token.
+# 2. Create and activate a virtual environment
+python3 -m venv venv
+source venv/bin/activate      # Windows: venv\Scripts\activate
 
-Roles: `user` (default) and `admin`, stored on `User.role`. Admin-only routes live under `/api/admin/*` and should be protected with a role check.
+# 3. Install dependencies
+pip install -r requirements.txt
 
-## Key Endpoints
+# 4. Copy the example env file and fill in your own values
+cp .env.example .env
 
-| Method | Route | Description |
-|---|---|---|
-| POST | `/api/auth/register` | Create an account |
-| POST | `/api/auth/login` | Log in |
-| GET | `/api/auth/me` | Current user info |
-| GET | `/api/books` | List/search books |
-| GET | `/api/cart` | Get current user's cart |
-| POST | `/api/cart` | Add a book to cart (imports from Google Books if needed) |
-| DELETE | `/api/cart/<item_id>` | Remove a cart item |
-| POST | `/api/orders/checkout` | Convert purchase cart into an order |
-| POST | `/api/lending/checkout` | Convert lending cart into lending requests |
-| GET | `/api/admin/books` | Admin: list all books |
-| GET | `/api/admin/orders` | Admin: list all orders |
-| GET | `/api/admin/lending` | Admin: list all lending requests |
+# 5. Apply database migrations
+flask db upgrade
 
-## Troubleshooting
+# 6. Run the development server
+flask run
+```
 
-- **500 on login/register**: usually means the database isn't reachable or migrations haven't been run — confirm PostgreSQL is running and `flask db upgrade` has been applied.
-- **404 "Book not found" on cart/checkout**: `GOOGLE_BOOKS_API_KEY` is likely missing or not loaded — check `.env`, restart the server after editing it, and verify with `flask shell` → `import os; print(os.environ.get("GOOGLE_BOOKS_API_KEY"))`.
-- **`invalid input syntax for type integer`**: leftover data or code expecting integer book IDs — make sure you're on the migration that changes `Book.id` to `String`.
+The API will be available at `http://localhost:5000`, with Swagger docs at `http://localhost:5000/apidocs/`.
 
-## Security Notes
+---
 
-- Secrets live only in `.env`, which is git-ignored and has never been committed to this repo's history
-- Rotate any API key immediately via the Google Cloud Console if it's ever exposed, and update `.env`
-- Restrict API keys by application and API scope in the Cloud Console
+## Environment Variables
+
+| Variable | Description |
+|---|---|
+| `SECRET_KEY` | Flask session secret |
+| `DATABASE_URL` | PostgreSQL connection string |
+| `JWT_SECRET_KEY` | Secret used to sign JWTs |
+| `FRONTEND_ORIGIN` | Allowed CORS origin for the frontend |
+| `GOOGLE_BOOKS_API_KEY` | Google Books API key (server-side only — never expose this in frontend requests) |
+
+---
+
+## Authentication & Roles
+
+- `POST /api/auth/register` and `POST /api/auth/login` return a JWT `access_token`.
+- Include it on subsequent requests: `Authorization: Bearer <token>`.
+- Users have a `role` of `user` or `admin`. Admin-only routes are protected with an `@admin_required` decorator and return `403` for non-admin users.
+- To promote a user to admin, update their role directly in the database (there is no self-service promotion endpoint, by design):
+  ```sql
+  UPDATE users SET role = 'admin' WHERE email = 'someone@example.com';
+  ```
+
+---
+
+## Core Workflows
+
+### Buying a book
+1. `POST /api/cart` with `{ "book_id": ..., "cart_type": "purchase" }`
+2. `POST /api/orders/checkout` — converts the cart into an order, ready for payment immediately (no admin approval needed for purchases)
+3. `POST /api/orders/<id>/pay/mock` with card details — simulates a card payment. A card number ending in `0000` simulates a decline; any other 16-digit number simulates success. **This is a mock endpoint for demo purposes — no real payment gateway is involved.**
+
+### Borrowing a book
+1. `POST /api/cart` with `{ "book_id": ..., "cart_type": "lending" }`
+2. `POST /api/lending/checkout` — creates a pending `LendingRequest`
+3. An admin approves it: `POST /api/admin/lending/<id>/approve` — sets a 14-day due date and decrements the book's `available_copies`
+4. The user can later request a return: `POST /api/lending/<id>/return`
+5. An admin confirms the physical return: `POST /api/admin/lending/<id>/confirm-return` — increments `available_copies` back
+
+Unlike purchases, **lending requests always require admin approval**, since they manage a limited resource (`available_copies`), simulating how a physical library works.
+
+---
+
+## API Documentation
+
+Full interactive API documentation, including all request/response schemas, is available via Swagger UI at `/apidocs/` once the server is running. The raw OpenAPI spec is available at `/apispec_1.json` and can be imported directly into Postman (**Import → Link**).
+
+---
+
+## Running Tests
+
+```bash
+pytest
+```
+
+---
+
+## Deployment (Render)
+
+The backend is deployed on [Render](https://render.com) as a Web Service:
+
+- **Root Directory:** `backend`
+- **Build Command:** `pip install -r requirements.txt && flask db upgrade`
+- **Start Command:** `gunicorn run:app`
+- **Python version:** pinned via the `PYTHON_VERSION` environment variable (`3.12.7`) — Render's default Python version can outpace `psycopg2-binary`'s available wheels, causing an `ImportError` at startup if left unpinned.
+
+A managed Render PostgreSQL instance provides `DATABASE_URL`.
+
+---
+
+## Known Limitations
+
+- **Payment is simulated**, not real. `POST /orders/<id>/pay/mock` demonstrates the payment *workflow* (order states, success/decline branching) without integrating a live payment gateway.
+- **Lending due dates are not enforced.** `LendingRequest.due_date` is tracked and displayed, but there is currently no automated process to flag a loan as overdue once the date passes.
+- Earlier exploration of M-Pesa (via KCB's BUNI API) and card payments (via Flutterwave) exists in the git history but was not used in the final deployed version, in favor of the reliable mock endpoint above.
