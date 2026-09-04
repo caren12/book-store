@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from app.extensions import db
 from app.models import Book
 from app.utils import admin_required
-from app.services.google_books import search_google_books
+from app.services.google_books import search_google_books, fetch_google_book
 
 books_bp = Blueprint("books", __name__)
 
@@ -123,6 +123,11 @@ def search_google_books_route():
         type: string
         required: true
         description: Free-text search query
+      - name: maxResults
+        in: query
+        type: integer
+        required: false
+        default: 20
     responses:
       200:
         description: Raw Google Books volume items matching the query
@@ -140,8 +145,32 @@ def search_google_books_route():
     if not q:
         return jsonify({"error": "Missing query parameter 'q'"}), 400
 
-    items = search_google_books(q)
+    max_results = request.args.get("maxResults", 20, type=int)
+    items = search_google_books(q, max_results=max_results)
     return jsonify({"items": items}), 200
+
+
+@books_bp.get("/google/<string:volume_id>")
+def get_google_volume(volume_id):
+    """Fetch a single volume from Google Books by ID (raw passthrough)
+    ---
+    tags:
+      - Books
+    parameters:
+      - name: volume_id
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: Raw Google Books volume item
+      404:
+        description: Volume not found
+    """
+    item = fetch_google_book(volume_id)
+    if not item:
+        return jsonify({"error": "Volume not found"}), 404
+    return jsonify(item), 200
 
 
 @books_bp.get("/<string:book_id>")

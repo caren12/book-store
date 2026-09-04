@@ -58,13 +58,11 @@ function mapVolumeToBook(item) {
   };
 }
 
-// Fetch books from Google Books API
+// Fetch books via our own backend, which holds the Google Books key server-side
 async function fetchVolumes(query, maxResults = 40) {
-  const apiKey = import.meta.env.VITE_GOOGLE_BOOKS_API_KEY;
-
-  const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(
+  const url = `/api/books/search/google?q=${encodeURIComponent(
     query
-  )}&maxResults=${maxResults}&key=${apiKey}`;
+  )}&maxResults=${maxResults}`;
 
   const res = await fetch(url);
 
@@ -150,9 +148,7 @@ export const fetchBookDetail = createAsyncThunk(
   "books/fetchBookDetail",
   async (bookId, { rejectWithValue }) => {
     try {
-      const apiKey = import.meta.env.VITE_GOOGLE_BOOKS_API_KEY;
-
-      const url = `https://www.googleapis.com/books/v1/volumes/${bookId}?key=${apiKey}`;
+      const url = `/api/books/google/${bookId}`;
 
       const res = await fetch(url);
 
