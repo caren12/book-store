@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from app.extensions import db
 from app.models import Book
 from app.utils import admin_required
+from app.services.google_books import search_google_books
 
 books_bp = Blueprint("books", __name__)
 
@@ -110,7 +111,40 @@ def list_genres():
     return jsonify({"genres": sorted(genres)}), 200
 
 
-@books_bp.get("/<int:book_id>")
+@books_bp.get("/search/google")
+def search_google_books_route():
+    """Search Google Books directly (live lookup, not the local catalog)
+    ---
+    tags:
+      - Books
+    parameters:
+      - name: q
+        in: query
+        type: string
+        required: true
+        description: Free-text search query
+    responses:
+      200:
+        description: Raw Google Books volume items matching the query
+        schema:
+          type: object
+          properties:
+            items:
+              type: array
+              items:
+                type: object
+      400:
+        description: Missing query parameter
+    """
+    q = request.args.get("q", "").strip()
+    if not q:
+        return jsonify({"error": "Missing query parameter 'q'"}), 400
+
+    items = search_google_books(q)
+    return jsonify({"items": items}), 200
+
+
+@books_bp.get("/<string:book_id>")
 def get_book(book_id):
     """Get a single book by ID
     ---
@@ -119,7 +153,7 @@ def get_book(book_id):
     parameters:
       - name: book_id
         in: path
-        type: integer
+        type: string
         required: true
     responses:
       200:
@@ -208,7 +242,7 @@ def create_book():
     return jsonify({"book": book.to_dict()}), 201
 
 
-@books_bp.put("/<int:book_id>")
+@books_bp.put("/<string:book_id>")
 @admin_required
 def update_book(book_id):
     """Update an existing book (admin only)
@@ -220,7 +254,7 @@ def update_book(book_id):
     parameters:
       - name: book_id
         in: path
-        type: integer
+        type: string
         required: true
       - name: body
         in: body
@@ -268,7 +302,7 @@ def update_book(book_id):
     return jsonify({"book": book.to_dict()}), 200
 
 
-@books_bp.delete("/<int:book_id>")
+@books_bp.delete("/<string:book_id>")
 @admin_required
 def delete_book(book_id):
     """Delete a book (admin only)
@@ -280,7 +314,7 @@ def delete_book(book_id):
     parameters:
       - name: book_id
         in: path
-        type: integer
+        type: string
         required: true
     responses:
       200:

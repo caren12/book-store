@@ -1,11 +1,7 @@
 import { useState } from "react";
 
-const BASE_URL = "https://www.googleapis.com/books/v1/volumes";
-const API_KEY = import.meta.env.VITE_GOOGLE_BOOKS_API_KEY;
-
 async function searchGoogleBooks(query) {
-  const url = `${BASE_URL}?q=${encodeURIComponent(query)}&key=${API_KEY}`;
-  const response = await fetch(url);
+  const response = await fetch(`/api/books/search/google?q=${encodeURIComponent(query)}`);
   if (!response.ok) throw new Error("Google Books request failed");
   const data = await response.json();
   return data.items || [];
@@ -21,11 +17,9 @@ export default function GoogleBooksSearch() {
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!query.trim()) return;
-
     setLoading(true);
     setError("");
     setSearched(true);
-
     try {
       const results = await searchGoogleBooks(query);
       setBooks(results);
@@ -41,7 +35,6 @@ export default function GoogleBooksSearch() {
     <div className="max-w-3xl mx-auto px-4 py-10">
       <h1 className="font-display text-3xl mb-2">Search Google Books</h1>
       <p className="text-ink/60 mb-6">Live lookup, separate from Booked's own catalog.</p>
-
       <form onSubmit={handleSearch} className="flex gap-2 mb-8">
         <input
           type="text"
@@ -58,17 +51,14 @@ export default function GoogleBooksSearch() {
           {loading ? "Searching…" : "Search"}
         </button>
       </form>
-
       {error && <p className="text-sm text-burgundy mb-4">{error}</p>}
       {searched && !loading && !error && books.length === 0 && (
         <p className="text-ink/50 italic">No results found.</p>
       )}
-
       <div className="space-y-4">
         {books.map((book) => {
           const info = book.volumeInfo || {};
           const thumbnail = info.imageLinks?.thumbnail;
-
           return (
             <div key={book.id} className="bg-parchment border border-ink/15 rounded-sm p-4 flex gap-4">
               {thumbnail ? (
